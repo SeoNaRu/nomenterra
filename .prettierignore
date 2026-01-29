@@ -1,0 +1,9 @@
+.next
+node_modules
+out
+dist
+build
+*.min.js
+*.min.css
+
+

@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+/* Lithos Room 전용 폰트 */
+/* 실제 파일은 /public/fonts/lithos_font.ttf 경로에 위치해야 합니다. */
+@font-face {
+  font-family: "LithosRoom";
+  src: url("/fonts/lithos_font.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

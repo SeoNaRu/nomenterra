@@ -2,112 +2,36 @@
 // 현재는 빈 뼈대만 제공, 추후 씬 단계(phase) 및 애니메이션 상태 관리에 사용 예정
 
 import { create } from "zustand";
+import {
+  pixelToWorldWithSize,
+  ROOM_WIDTH,
+  ROOM_HEIGHT,
+  ROOM_DEPTH,
+} from "@/components/scenes/lithosRoom/coordinates";
+import type {
+  ScenePhase,
+  LetterSourceSpot,
+  SceneLetter,
+  CameraPosition,
+  RemovedSpot,
+  CharCell,
+  SurfaceName,
+  TextureSize,
+  WallLetter,
+} from "./sceneTypes";
 
-/** 방 크기 (Scene.tsx와 동일, 픽셀→월드 변환용) */
-const ROOM_WIDTH = 30;
-const ROOM_HEIGHT = 10;
-const ROOM_DEPTH = 30;
-
-function pixelToWorld(
-  surface: SurfaceName,
-  px: number,
-  py: number,
-  size: { w: number; h: number },
-  inset = 0.01
-): [number, number, number] {
-  const w = size.w > 0 ? size.w : 1024;
-  const h = size.h > 0 ? size.h : 1024;
-  const u = px / w;
-  const v = 1 - py / h;
-
-  switch (surface) {
-    case "ceiling":
-      return [
-        -ROOM_WIDTH / 2 + u * ROOM_WIDTH,
-        ROOM_HEIGHT / 2 - inset,
-        -ROOM_DEPTH / 2 + v * ROOM_DEPTH,
-      ];
-    case "floor":
-      return [
-        -ROOM_WIDTH / 2 + u * ROOM_WIDTH,
-        -ROOM_HEIGHT / 2 + inset,
-        -ROOM_DEPTH / 2 + (1 - v) * ROOM_DEPTH,
-      ];
-    case "left":
-      return [
-        -ROOM_WIDTH / 2 + inset,
-        -ROOM_HEIGHT / 2 + v * ROOM_HEIGHT,
-        -ROOM_DEPTH / 2 + u * ROOM_DEPTH,
-      ];
-    case "right":
-      return [
-        ROOM_WIDTH / 2 - inset,
-        -ROOM_HEIGHT / 2 + v * ROOM_HEIGHT,
-        ROOM_DEPTH / 2 - u * ROOM_DEPTH,
-      ];
-  }
-}
-
-// 씬 단계 타입 정의
-export type ScenePhase = "IDLE" | "LOADING" | "PLAYING" | "PAUSED";
-
-/** 글자 하나의 출발 위치(배치 배정 시 저장) */
-export interface LetterSourceSpot {
-  position: [number, number, number];
-  surface: SurfaceName;
-  row?: number;
-  col?: number;
-}
-
-export interface SceneLetter {
-  id: string;
-  char: string; // A-Z
-  createdAt: number;
-  /** 배치 추가 시 한 번에 배정된 출발 위치(있으면 FlyingLetter가 사용) */
-  sourceSpot?: LetterSourceSpot;
-}
-
-export interface CameraPosition {
-  x: number;
-  y: number;
-  z: number;
-}
-
-/** 글자가 떨어져 나온 벽면 자리(비어 보이게 할 위치) */
-export interface RemovedSpot {
-  id: string;
-  position: [number, number, number];
-  surface: "ceiling" | "floor" | "left" | "right";
-  /** 그리드 위치 — 어느 (row, col)에서 떨어졌는지 */
-  row?: number;
-  col?: number;
-  /** false: 아직 3D 글자가 벽면까지 안 나옴 → 텍스처에서 칸 지우지 않음. true/undefined: 칸 지움 */
-  emerged?: boolean;
-}
-
-/** 벽면 그리드 한 칸: 행/열 + 글자 + 픽셀 중심(월드 변환용) */
-export interface CharCell {
-  row: number;
-  col: number;
-  char: string;
-  px: number;
-  py: number;
-}
-
-export type SurfaceName = "ceiling" | "floor" | "left" | "right";
-
-/** 벽면별 텍스처(캔버스) 크기 — 픽셀→월드 변환 시 사용 */
-export type TextureSize = { w: number; h: number };
-
-/** 벽에 붙어 있는 개별 글자 (3D Text로 렌더링, 호출 시 실제로 떨어져 나감) */
-export interface WallLetter {
-  id: string;
-  surface: SurfaceName;
-  row: number;
-  col: number;
-  char: string;
-  position: [number, number, number];
-}
+// 타입 재export (하위 호환성)
+export type {
+  ScenePhase,
+  LetterSourceSpot,
+  SceneLetter,
+  CameraPosition,
+  RemovedSpot,
+  CharCell,
+  SurfaceName,
+  TextureSize,
+  WallLetter,
+};
 
 interface SceneState {
   phase: ScenePhase;
@@ -262,7 +186,7 @@ export const useSceneStore = create<SceneState>()((set) => ({
             col = cell.col;
             usedKeys.add(`${s}:${cell.row},${cell.col}`);
             const size = state.letterTextureSize[s];
-            position = pixelToWorld(s, cell.px, cell.py, size);
+            position = pixelToWorldWithSize(s, cell.px, cell.py, size);
           } else {
             // 3순위: 랜덤 위치
             const hash = (x: string) => {
